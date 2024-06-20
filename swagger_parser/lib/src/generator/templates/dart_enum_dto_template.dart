@@ -56,10 +56,14 @@ String _dartEnumDartMappableTemplate(
   final className = enumClass.name.toPascal;
   final jsonParam = unknownEnumValue || enumsToJson;
 
-  final values =
+  var values =
       '${enumClass.items.mapIndexed((i, e) => _enumValueDartMappable(i, enumClass.type, e, jsonParam: jsonParam)).join(
             ',\n',
-          )}${unknownEnumValue ? ',' : ';'}';
+          )}${unknownEnumValue && !enumsToJson ? ',' : ';'}';
+
+  if (enumsToJson) {
+    values += "\n\n${indentation(2)}String toJson() => toValue();";
+  }
 
   return '''
 ${generatedFileComment(
