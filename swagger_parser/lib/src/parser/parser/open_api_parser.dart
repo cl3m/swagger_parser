@@ -240,7 +240,7 @@ class OpenApiParser {
             parameter[_schemaConst] != null
                 ? parameter[_schemaConst] as Map<String, dynamic>
                 : parameter,
-            name: parameter[_nameConst].toString(),
+            name: parameter[_nameConst].replaceAll(".","").toString(),
             isRequired: isRequired,
           );
 
