@@ -28,6 +28,7 @@ class SWPConfig {
     this.replacementRules = const [],
     this.defaultContentType = 'application/json',
     this.extrasParameterByDefault = false,
+    this.dioOptionsParameterByDefault = false,
     this.pathMethodName = false,
     this.mergeClients = false,
     this.enumsParentPrefix = true,
@@ -54,6 +55,7 @@ class SWPConfig {
     required this.replacementRules,
     required this.defaultContentType,
     required this.extrasParameterByDefault,
+    required this.dioOptionsParameterByDefault,
     required this.pathMethodName,
     required this.mergeClients,
     required this.enumsParentPrefix,
@@ -121,6 +123,14 @@ class SWPConfig {
     if (extrasParameterByDefault is! bool?) {
       throw const ConfigException(
         "Config parameter 'extras_parameter_by_default' must be bool.",
+      );
+    }
+
+    final dioOptionsParameterByDefault =
+        yamlMap['dio_options_parameter_by_default'];
+    if (dioOptionsParameterByDefault is! bool?) {
+      throw const ConfigException(
+        "Config parameter 'dio_options_parameter_by_default' must be bool.",
       );
     }
 
@@ -285,6 +295,8 @@ class SWPConfig {
       defaultContentType: defaultContentType ?? dc.defaultContentType,
       extrasParameterByDefault:
           extrasParameterByDefault ?? dc.extrasParameterByDefault,
+      dioOptionsParameterByDefault:
+          dioOptionsParameterByDefault ?? dc.dioOptionsParameterByDefault,
       mergeClients: mergeClients ?? dc.mergeClients,
       enumsParentPrefix: enumsParentPrefix ?? dc.enumsParentPrefix,
       skippedParameters: skippedParameters ?? dc.skippedParameters,
@@ -367,17 +379,28 @@ class SWPConfig {
   /// Default content type for all requests and responses.
   ///
   /// If the content type does not match the default, generates:
-  /// @Headers(<String, String>{'Content-Type': 'PARSED CONTENT TYPE'})
+  /// `@Headers(<String, String>{'Content-Type': 'PARSED CONTENT TYPE'})`
   final String defaultContentType;
 
   /// DART ONLY
   /// Add extra parameter to all requests. Supported after retrofit 4.1.0.
   ///
   /// If  value is 'true', then the annotation will be added to all requests.
-  ///
+  /// ```dart
   /// @POST('/path/')
   /// Future<String> myMethod({@Extras() Map<String, dynamic>? extras});
+  /// ```
   final bool extrasParameterByDefault;
+
+  /// DART ONLY
+  /// Add dio options parameter to all requests.
+  ///
+  /// If  value is 'true', then the annotation will be added to all requests.
+  /// ```dart
+  /// @POST('/path/')
+  /// Future<String> myMethod({@DioOptions() RequestOptions? options});
+  /// ```
+  final bool dioOptionsParameterByDefault;
 
   /// If `true`, use the endpoint path for the method name.
   /// if `false`, use `operationId`.
@@ -401,6 +424,7 @@ class SWPConfig {
       jsonSerializer: jsonSerializer,
       defaultContentType: defaultContentType,
       extrasParameterByDefault: extrasParameterByDefault,
+      dioOptionsParameterByDefault: dioOptionsParameterByDefault,
       rootClient: rootClient,
       rootClientName: rootClientName,
       clientPostfix: clientPostfix,

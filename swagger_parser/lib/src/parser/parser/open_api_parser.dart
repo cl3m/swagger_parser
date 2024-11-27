@@ -1,4 +1,5 @@
 import 'dart:collection';
+import 'dart:io';
 
 import 'package:collection/collection.dart';
 import 'package:path/path.dart' as p;
@@ -39,6 +40,7 @@ class OpenApiParser {
   final _enumClasses = <UniversalEnumClass>{};
   final _usedNamesCount = <String, int>{};
   final _skipDataClasses = <String>[];
+  final _objectNamesCount = <String, int>{};
 
   static const _additionalPropertiesConst = 'additionalProperties';
   static const _allOfConst = 'allOf';
@@ -82,6 +84,7 @@ class OpenApiParser {
   static const _titleConst = 'title';
   static const _typeConst = 'type';
   static const _versionConst = 'version';
+  static const _xNullableConst = 'x-nullable';
 
   UniversalEnumClass _getUniqueEnumClass({
     required final String name,
@@ -675,11 +678,31 @@ class OpenApiParser {
     if (map case {_propertiesConst: final Map<String, dynamic> props}) {
       for (final propertyName in props.keys) {
         final propertyValue = props[propertyName] as Map<String, dynamic>;
+        var isNullable = propertyValue[_nullableConst].toString().toBool();
+        // OpenAPI 2.0 nullable value
+        isNullable =
+            isNullable ?? propertyValue[_xNullableConst].toString().toBool();
+
+        isNullable = isNullable ??
+            switch (propertyValue) {
+              {_anyOfConst: final List<dynamic> anyOf} => anyOf.any(
+                  (e) => e is Map<String, dynamic> && e['type'] == 'null',
+                ),
+              {_oneOfConst: final List<dynamic> oneOf} => oneOf.any(
+                  (e) => e is Map<String, dynamic> && e['type'] == 'null',
+                ),
+              {_allOfConst: final List<dynamic> allOf} => allOf.any(
+                  (e) => e is Map<String, dynamic> && e['type'] == 'null',
+                ),
+              _ => false,
+            };
+
+        final isRequired = requiredParameters.contains(propertyName);
         final typeWithImport = _findType(
           propertyValue,
           name: propertyName,
           additionalName: additionalName,
-          isRequired: requiredParameters.contains(propertyName),
+          isRequired: isRequired || !isNullable,
         );
         parameters.add(typeWithImport.type);
         if (typeWithImport.import != null) {
@@ -1020,6 +1043,15 @@ class OpenApiParser {
 
       for (final replacementRule in config.replacementRules) {
         type = replacementRule.apply(type)!;
+      }
+
+      // Check for duplicate type names
+      if (_objectNamesCount.containsKey(type)) {
+        _objectNamesCount[type] = _objectNamesCount[type]! + 1;
+        type = '$type${_objectNamesCount[type]}';
+        stdout.writeln('Found duplicate object name: $type');
+      } else {
+        _objectNamesCount[type] = 1;
       }
 
       if (_objectClasses.where((oc) => oc.name == type).isEmpty) {
